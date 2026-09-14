@@ -6,7 +6,7 @@ backend/app/__pycache__/
 .env
 
 # Chroma (índice vetorial gerado localmente)
-backend/data/chroma_db/
+backend/data/faiss_index/
 
 # Next.js
 frontend/node_modules/

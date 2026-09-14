@@ -1,10 +1,14 @@
 """
 Ponto de entrada da API FastAPI.
-Por enquanto só expõe um health check — o endpoint /chat será
-adicionado quando o grafo LangGraph (RAG) estiver implementado.
+Expõe o endpoint /chat, que dispara o grafo LangGraph de RAG.
 """
+from typing import List
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
+from app.graph import ChatMessage, get_graph
 
 app = FastAPI(title="Chatbot RAG - Copa do Mundo")
 
@@ -18,6 +22,25 @@ app.add_middleware(
 )
 
 
+class ChatRequest(BaseModel):
+    question: str
+    history: List[ChatMessage] = []
+
+
+class ChatResponse(BaseModel):
+    answer: str
+
+
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+
+@app.post("/chat", response_model=ChatResponse)
+def chat(request: ChatRequest):
+    graph = get_graph()
+    result = graph.invoke({
+        "question": request.question,
+        "history": request.history,
+    })
+    return ChatResponse(answer=result["answer"])
