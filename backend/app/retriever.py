@@ -11,7 +11,7 @@ from langchain_core.documents import Document
 from app.config import FAISS_INDEX_DIR
 from app.embeddings import get_embeddings
 
-TOP_K = 4  # quantos chunks recuperar por pergunta
+TOP_K = 8  # quantos chunks recuperar por pergunta
 
 _vector_store = None  # cache simples para não recarregar o índice a cada chamada
 

@@ -293,8 +293,6 @@ Maior vitória em dezesseis avos de finais: França 3–0 Suécia e Espanha 3–
  Maior goleada em fase final (a partir das oitavas de final): Suécia 8–0 Cuba, 1938
  Única goleada na seleção que viria a ser campeã: Hungria 8–3 Alemanha Ocidental, 1954
 
-== Seleções ==
-
 === Geral ===
 Maior número de participações:
 
@@ -853,22 +851,6 @@ Mais assistências em fases mata-mata: 8, Lionel Messi (2010, 2014, 2018, 2022, 
 Mais contribuições para gol(o)s: Lionel Messi, 33, 21 gol(o)s e 12 assistências (2006 – 2026)
 Mais contribuições para gol(o)s em fases mata-mata: Lionel Messi, 17, 7 gol(o)s e 10 assistências (2006 – 2026)
 
-=== Marco miliário de gol(o)s em Copas do Mundo: ===
-
-=== Gol(o)s em finais ===
-
-==== Pelo tempo: ====
-
-==== Pela posição dos finalistas: ====
-
-==== Por confederação: ====
-
-==== Por seleção: ====
-
-==== Por final: ====
-
-==== Por país sede: ====
-
 ==== Outros dados ====
 Gol(o)s por anfitriões: 20 (em 8 edições, média de 2,5)
 Gol(o)s em anfitriões: 14 (em 8 edições, média de 1,75)
@@ -1324,12 +1306,6 @@ Fases diferentes:
 
  Nota: Brasil - Tchecoslováquia é o único confronto repetido em que ocorreu mais de uma vez nas copas, ao passo que a Alemanha é a única seleção que enfrentou confrontos repetidos com duas seleções diferentes em um mesmo mundial.
 
-== Outros confrontos repetidos ==
-
-=== No mesmo país em diferentes edições ===
-
-=== Em países do confronto ===
-
 === Na mesma cidade em diferentes edições ===
 
 Nota: México - Bélgica e Espanha - Chile também repetiram os estádios.
@@ -1611,8 +1587,6 @@ Informações referentes ao tempo de cada Mundial:
 18 jogos - Montevidéu - estádios Centenário, Parque Central e Pocitos (Copa do Mundo de 1930).
 15 jogos - Rio de Janeiro - 8 de 1950 e 7 de 2014 no Estádio do Maracanã; East Rutherford - 7 jogos no Giants Stadium em 1994, e 8 no MetLife Stadium em 2026
 
-==== Maior número de jogos contra o anfitrião: ====
-
 ==== Estatísticas ====
 Maior número de jogos em suas terras: Alemanha e México – 14
 Menor número de jogos em suas terras: África do Sul e Catar – 3
@@ -1862,10 +1836,6 @@ Seleções que usaram três uniformes diferentes na mesma Copa:
 Nota: Como França e Hungria chegaram para seu jogo em Mar del Plata trazendo camisas brancas, a primeira pegou um uniforme de um time local, o Kimberley de Mar del Plata. 
 
 Seleção com maior número de jogadores naturalizados em uma única Copa: Marrocos, 2018 (17)
-
-== Ver também ==
-
-== Referências ==
 
 == Ligações externas ==
 Recordes da Copa do Mundo e Eliminatórias[ligação inativa]

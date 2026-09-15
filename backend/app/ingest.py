@@ -26,9 +26,36 @@ NOISE_SECTION_HEADERS = {
 }
 
 MIN_CLEANED_LENGTH = 500  # documentos mais curtos que isso após limpeza são descartados
+MIN_CHUNK_LENGTH = 80  # chunks menores que isso são só restos de título/tabela, não ajudam na busca
 
 CHUNK_SIZE = 800
 CHUNK_OVERLAP = 120
+
+SECTION_HEADER_RE = re.compile(r"^\s*=+\s*.*?\s*=+\s*$")  # ex: "=== Final ==="
+
+
+def remove_empty_sections(lines: List[str]) -> List[str]:
+    """Remove cabeçalhos de seção sem conteúdo.
+
+    O texto puro da Wikipédia perde as tabelas (chaveamento, placares,
+    artilharia), deixando sequências de cabeçalhos vazios como
+    "=== Semifinais ===  === Final ===". Esses trechos viravam chunks sem
+    informação que apareciam no topo da busca.
+    """
+    kept = []
+    for i, line in enumerate(lines):
+        if SECTION_HEADER_RE.match(line):
+            next_line = next((l for l in lines[i + 1:] if l.strip()), None)
+            if next_line is None or SECTION_HEADER_RE.match(next_line):
+                continue
+        kept.append(line)
+    return kept
+
+
+def title_from_source(source: str) -> str:
+    """'copa-do-mundo-fifa-de-2022' -> 'Copa do mundo FIFA de 2022'."""
+    title = source.replace("-", " ").replace("fifa", "FIFA")
+    return title[:1].upper() + title[1:]
 
 
 def clean_text(text: str) -> str:
@@ -48,7 +75,7 @@ def clean_text(text: str) -> str:
     if truncate_at is not None:
         lines = lines[:truncate_at]
 
-    text = "\n".join(lines)
+    text = "\n".join(remove_empty_sections(lines))
     text = re.sub(r"\n{3,}", "\n\n", text)  # remove excesso de linhas em branco
     text = re.sub(r"[ \t]{2,}", " ", text)
     return text.strip()
@@ -80,7 +107,18 @@ def chunk_documents(documents: List[Document]) -> List[Document]:
         chunk_overlap=CHUNK_OVERLAP,
         separators=["\n\n", "\n", ". ", " ", ""],
     )
-    return splitter.split_documents(documents)
+    chunks = []
+    for chunk in splitter.split_documents(documents):
+        if len(chunk.page_content.strip()) < MIN_CHUNK_LENGTH:
+            continue
+        # Um trecho no meio do artigo muitas vezes não cita o ano da edição
+        # ("a Argentina conquistou seu terceiro título..."). Prefixar o título
+        # do artigo liga o chunk à edição certa, tanto na busca quanto para a LLM.
+        title = title_from_source(chunk.metadata["source"])
+        chunk.page_content = f"{title}: {chunk.page_content}"
+        chunk.metadata["title"] = title
+        chunks.append(chunk)
+    return chunks
 
 
 def build_and_save_index(chunks: List[Document]) -> None:
