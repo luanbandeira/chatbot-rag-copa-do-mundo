@@ -5,7 +5,7 @@ backend/app/__pycache__/
 *.pyc
 .env
 
-# Chroma (índice vetorial gerado localmente)
+# FAISS (índice vetorial gerado localmente por app.ingest)
 backend/data/faiss_index/
 
 # Next.js
