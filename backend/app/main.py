@@ -12,10 +12,11 @@ from app.graph import ChatMessage, get_graph
 
 app = FastAPI(title="Chatbot RAG - Copa do Mundo")
 
-# Libera acesso do frontend Next.js (rodando em localhost:3000) durante o desenvolvimento
+# Libera acesso do frontend Next.js rodando localmente em qualquer porta
+# (se a 3000 estiver ocupada, o Next sobe na 3001, 3002...)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

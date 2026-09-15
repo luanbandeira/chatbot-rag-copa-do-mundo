@@ -41,60 +41,101 @@ Os textos coletados já estão no repositório, então não é preciso rodar o s
 
 ## Como executar
 
-Pré-requisitos: Python 3.12, Node.js 20+ e uma chave gratuita da Groq.
+### Pré-requisitos
 
-### Backend
+- **Python 3.12.** Python 3.13 **não funciona**: algumas dependências (`numpy` 1.26 e `faiss-cpu` 1.9) não têm pacote para ele e a instalação falha. Confira com `py -3.12 --version` (Windows) ou `python3.12 --version` (Linux/macOS).
+- **Node.js 20 ou mais recente** (confira com `node -v`).
+- **Chave da Groq**, gratuita: crie uma conta em https://console.groq.com e gere a chave em https://console.groq.com/keys.
+- ~2GB livres em disco (dependências + modelo de embeddings) e internet na primeira execução.
 
-1. Entre na pasta `backend` e crie o ambiente virtual:
+A aplicação usa **dois terminais**: um para o backend e outro para o frontend. Os comandos abaixo partem da pasta raiz do projeto.
+
+### Backend (terminal 1)
+
+1. Entre na pasta `backend` e crie o ambiente virtual com o Python 3.12:
 ```
    cd backend
-   python -m venv venv
-   .\venv\Scripts\Activate.ps1   # Windows (PowerShell)
-   source venv/bin/activate      # Linux/macOS
+   py -3.12 -m venv venv          # Windows
+   python3.12 -m venv venv        # Linux/macOS
 ```
-2. Instale o torch (CPU) antes do resto, para evitar baixar pacotes CUDA desnecessários:
+2. Ative o ambiente virtual (o terminal passa a mostrar `(venv)` no início da linha):
+```
+   .\venv\Scripts\Activate.ps1    # Windows (PowerShell)
+   venv\Scripts\activate.bat      # Windows (Prompt de Comando)
+   source venv/bin/activate       # Linux/macOS
+```
+   Se o PowerShell mostrar o erro "a execução de scripts foi desabilitada neste sistema", libere só para o terminal atual e ative de novo:
+```
+   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+   .\venv\Scripts\Activate.ps1
+```
+3. Instale o torch (versão CPU) antes do resto, para evitar baixar pacotes CUDA desnecessários, e depois as demais dependências:
 ```
    pip install torch --index-url https://download.pytorch.org/whl/cpu
    pip install -r requirements.txt
 ```
-3. Copie `.env.example` para `.env` e preencha `GROQ_API_KEY` com sua chave (console.groq.com/keys).
-4. (Opcional) Colete de novo o conteúdo da base de conhecimento — os textos já estão em `data/raw/`:
+4. Crie o arquivo `.env` a partir do exemplo:
 ```
-   python -m app.scraper
+   copy .env.example .env         # Windows
+   cp .env.example .env           # Linux/macOS
 ```
-5. Gere os embeddings e monte o índice vetorial FAISS (obrigatório na primeira execução, o índice não é versionado). Na primeira vez o modelo de embeddings (~470MB) é baixado automaticamente:
+   Abra o `.env` num editor de texto e cole sua chave em `GROQ_API_KEY=` (ex.: `GROQ_API_KEY=gsk_...`).
+5. Gere os embeddings e monte o índice vetorial FAISS. É obrigatório na primeira execução (o índice não é versionado) e leva alguns minutos, pois baixa o modelo de embeddings (~470MB):
 ```
    python -m app.ingest
 ```
-6. Suba a API:
+   Ao final deve aparecer `Concluído! Índice pronto para ser usado no grafo de RAG.`
+6. Suba a API (ainda dentro de `backend`, com o ambiente virtual ativado):
 ```
-   uvicorn app.main:app --reload --port 8000
+   uvicorn app.main:app --port 8000
 ```
-7. (Opcional) Teste o endpoint direto:
+   Deixe esse terminal aberto. A API está pronta quando aparecer `Application startup complete`.
+7. (Opcional) Teste a API pelo navegador em http://localhost:8000/docs: abra `POST /chat`, clique em **Try it out**, use o corpo abaixo e clique em **Execute**:
 ```
-   POST http://localhost:8000/chat
-   Body: {"question": "Quem venceu a Copa do Mundo de 1970?", "history": []}
+   {"question": "Quem venceu a Copa do Mundo de 2022?", "history": []}
 ```
 
-### Frontend
+(Opcional) Para coletar de novo o conteúdo da Wikipédia, rode `python -m app.scraper` antes do passo 5. Os textos já estão em `data/raw/`, então isso não é necessário.
 
-Com o backend rodando, em outro terminal:
+### Frontend (terminal 2)
+
+Com o backend rodando, abra outro terminal na pasta raiz do projeto:
 
 1. Entre na pasta `frontend` e instale as dependências:
 ```
    cd frontend
    npm install
 ```
-2. Copie `.env.local.example` para `.env.local` (define `NEXT_PUBLIC_API_URL=http://localhost:8000`, o endereço do backend).
-3. Suba a interface:
+2. Suba a interface:
 ```
    npm run dev
 ```
-4. Acesse http://localhost:3000 e faça perguntas, por exemplo: "Quem venceu a Copa de 2022?" e depois "E em 2018?".
+3. Acesse no navegador o endereço mostrado no terminal (normalmente http://localhost:3000) e faça perguntas, por exemplo: "Quem venceu a Copa de 2022?" e depois "E em 2018?".
+
+Por padrão o frontend procura o backend em `http://localhost:8000`. Se o backend estiver em outro endereço, copie `.env.local.example` para `.env.local`, ajuste `NEXT_PUBLIC_API_URL` e reinicie o `npm run dev`.
+
+### Nas próximas execuções
+
+Não é preciso instalar nada nem rodar a ingestão de novo. Basta:
+
+- terminal 1: `cd backend`, ativar o ambiente virtual (passo 2) e `uvicorn app.main:app --port 8000`;
+- terminal 2: `cd frontend` e `npm run dev`.
+
+## Problemas comuns
+
+| Sintoma | Causa e solução |
+|---|---|
+| `pip install -r requirements.txt` falha tentando compilar `numpy` ou `faiss-cpu` | O ambiente virtual foi criado com Python diferente do 3.12. Apague a pasta `venv` e refaça o passo 1 com `py -3.12` / `python3.12`. |
+| `[AVISO] GROQ_API_KEY não configurada` | O `.env` não existe ou está sem a chave, ou o comando foi rodado fora da pasta `backend` (o `.env` é lido da pasta atual). |
+| `could not open data\faiss_index\index.faiss` | O índice ainda não foi gerado: rode `python -m app.ingest` (passo 5). |
+| No chat aparece "Não consegui falar com o servidor do chatbot" | O backend não está rodando ou não está na porta 8000. Confira o terminal 1 e http://localhost:8000/health. |
+| Aviso do Hugging Face sobre *symlinks* no Windows | Pode ser ignorado; afeta só o jeito como o modelo fica em cache. |
+| A primeira pergunta demora alguns segundos a mais | Normal: o modelo de embeddings e o índice são carregados na primeira requisição. |
+| `address already in use` na porta 8000, ou a API responde com código antigo | Um uvicorn antigo continua rodando. No Windows, veja o PID com `netstat -ano \| findstr :8000` e encerre com `taskkill /PID <número> /F`; no Linux/macOS, use `lsof -i :8000` e `kill <número>`. |
 
 ## Dependências
 
-- Backend: `backend/requirements.txt` (+ `torch` CPU, instalado à parte conforme o passo 2)
+- Backend: `backend/requirements.txt` (+ `torch` CPU, instalado à parte conforme o passo 3)
 - Frontend: `frontend/package.json`
 
 ## Equipe
