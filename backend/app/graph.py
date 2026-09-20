@@ -2,11 +2,12 @@
 Grafo LangGraph que orquestra o fluxo de RAG do chatbot.
 
 Nós, mapeando diretamente para as etapas centrais exigidas pela atividade:
-    1. receive_question  — entrada da pergunta
-    2. retrieve_context   — recuperação de contexto
-    3. build_prompt        — montagem do prompt (contexto + histórico)
-    4. call_llm             — chamada da LLM externa (Groq)
-    5. format_response      — retorno da resposta
+    1. receive_question   — entrada da pergunta
+    2. rewrite_question   — contextualização da pergunta usando o histórico
+    3. retrieve_context   — recuperação de contexto
+    4. build_prompt       — montagem do prompt (contexto + histórico)
+    5. call_llm           — chamada da LLM externa (Groq)
+    6. format_response    — retorno da resposta
 """
 from typing import List, TypedDict
 
@@ -36,6 +37,7 @@ class ChatMessage(TypedDict):
 
 class GraphState(TypedDict):
     question: str
+    rewritten_question: str
     history: List[ChatMessage]
     retrieved_context: str
     sources: List[str]
@@ -53,17 +55,87 @@ def receive_question_node(state: GraphState) -> GraphState:
     state["question"] = state["question"].strip()
     return state
 
+def rewrite_question_node(state: GraphState) -> GraphState:
+    """Etapa 2: contextualização da pergunta usando o histórico."""
+
+    history = state.get("history", [])
+
+    # Se não houver histórico, não é necessário chamar a LLM.
+    if not history:
+        state["rewritten_question"] = state["question"]
+        return state
+
+    recent_history = history[-MAX_HISTORY_TURNS * 2:]
+
+    history_text = ""
+
+    for turn in recent_history:
+        prefixo = "Usuário" if turn["role"] == "user" else "Assistente"
+        history_text += f"{prefixo}: {turn['content']}\n"
+
+    rewrite_prompt = f"""
+Você é responsável por preparar perguntas para um sistema de busca
+sobre a Copa do Mundo FIFA.
+
+Use o histórico da conversa para transformar a PERGUNTA ATUAL em uma
+pergunta completa e independente.
+
+REGRAS:
+- Preserve exatamente a intenção do usuário.
+- Use o histórico somente quando ele for necessário para entender a pergunta.
+- Não responda à pergunta.
+- Não invente informações.
+- Retorne SOMENTE a pergunta reescrita.
+- Se a pergunta atual já for independente e clara, apenas repita-a.
+
+HISTÓRICO:
+{history_text}
+
+PERGUNTA ATUAL:
+{state["question"]}
+
+PERGUNTA REESCRITA:
+""".strip()
+
+    try:
+        llm = ChatGroq(
+            api_key=GROQ_API_KEY,
+            model=GROQ_MODEL,
+            temperature=0
+        )
+
+        response = llm.invoke([
+            HumanMessage(content=rewrite_prompt)
+        ])
+
+        rewritten = response.content.strip()
+
+        print(f"[RAG] Pergunta original: {state['question']}")
+        print(f"[RAG] Pergunta reescrita: {rewritten}")
+
+        # Fallback de segurança
+        if rewritten:
+            state["rewritten_question"] = rewritten
+        else:
+            state["rewritten_question"] = state["question"]
+
+    except Exception as e:
+        print(f"[rewrite_question] Erro ao reescrever pergunta: {e}")
+        state["rewritten_question"] = state["question"]
+
+    return state
+
 
 def retrieve_context_node(state: GraphState) -> GraphState:
-    """Etapa 2: recuperação dos chunks mais relevantes da base vetorial."""
-    docs = retrieve_chunks(state["question"])
+    """Etapa 3: recuperação dos chunks mais relevantes da base vetorial."""
+    docs = retrieve_chunks(state["rewritten_question"])
     state["retrieved_context"] = "\n\n---\n\n".join(doc.page_content for doc in docs)
     state["sources"] = sorted({doc.metadata.get("source", "desconhecido") for doc in docs})
     return state
 
 
 def build_prompt_node(state: GraphState) -> GraphState:
-    """Etapa 3: montagem do prompt, combinando contexto recuperado e histórico."""
+    """Etapa 4: montagem do prompt, combinando contexto recuperado e histórico."""
     history_text = ""
     recent_history = state["history"][-MAX_HISTORY_TURNS * 2:]
     for turn in recent_history:
@@ -79,7 +151,7 @@ def build_prompt_node(state: GraphState) -> GraphState:
 
 
 def call_llm_node(state: GraphState) -> GraphState:
-    """Etapa 4: chamada à LLM externa (Groq) para gerar a resposta final."""
+    """Etapa 5: chamada à LLM externa (Groq) para gerar a resposta final."""
     llm = ChatGroq(api_key=GROQ_API_KEY, model=GROQ_MODEL, temperature=0.2)
     messages = [
         SystemMessage(content=SYSTEM_PROMPT),
@@ -91,7 +163,7 @@ def call_llm_node(state: GraphState) -> GraphState:
 
 
 def format_response_node(state: GraphState) -> GraphState:
-    """Etapa 5: retorno da resposta — anexa as fontes usadas na resposta final."""
+    """Etapa 6: retorno da resposta — anexa as fontes usadas na resposta final."""
     if state["sources"]:
         fontes = ", ".join(state["sources"])
         state["answer"] = f"{state['answer']}\n\n_Fontes: {fontes}_"
@@ -102,13 +174,16 @@ def build_graph():
     graph = StateGraph(GraphState)
 
     graph.add_node("receive_question", receive_question_node)
+    graph.add_node("rewrite_question", rewrite_question_node)
     graph.add_node("retrieve_context", retrieve_context_node)
     graph.add_node("build_prompt", build_prompt_node)
     graph.add_node("call_llm", call_llm_node)
     graph.add_node("format_response", format_response_node)
 
     graph.set_entry_point("receive_question")
-    graph.add_edge("receive_question", "retrieve_context")
+
+    graph.add_edge("receive_question", "rewrite_question")
+    graph.add_edge("rewrite_question", "retrieve_context")
     graph.add_edge("retrieve_context", "build_prompt")
     graph.add_edge("build_prompt", "call_llm")
     graph.add_edge("call_llm", "format_response")
