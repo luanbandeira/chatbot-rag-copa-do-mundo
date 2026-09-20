@@ -29,6 +29,18 @@ def _get_vector_store() -> FAISS:
 
 
 def retrieve_chunks(question: str, k: int = TOP_K) -> List[Document]:
-    """Retorna os k chunks mais relevantes semanticamente para a pergunta."""
+    """Retorna apenas os chunks com score de relevância aceitável."""
     vector_store = _get_vector_store()
-    return vector_store.similarity_search(question, k=k)
+
+    results = vector_store.similarity_search_with_score(
+        question,
+        k=k,
+    )
+
+    threshold = 1.0
+
+    return [
+        document
+        for document, score in results
+        if score <= threshold
+    ]
