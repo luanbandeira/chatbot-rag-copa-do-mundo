@@ -150,6 +150,29 @@ body {
   color: #7a2b2b;
 }
 
+.retry-button {
+  display: block;
+  margin-top: 10px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid #c98d8d;
+  background: transparent;
+  color: #7a2b2b;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.retry-button:hover:not(:disabled) {
+  background: #f3dada;
+}
+
+.retry-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .typing {
   color: var(--color-ink-soft);
   font-size: 14px;

@@ -4,6 +4,51 @@ import { useEffect, useRef, useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// O pipeline de RAG (embeddings + LLM) leva alguns segundos; sem um limite a
+// requisição pode ficar pendurada indefinidamente se o backend travar.
+const REQUEST_TIMEOUT_MS = 45000;
+
+class HttpError extends Error {
+  constructor(status) {
+    super("HTTP " + status);
+    this.name = "HttpError";
+    this.status = status;
+  }
+}
+
+// Cada falha tem uma causa e uma ação diferente para quem está usando o chat,
+// então vale distingui-las em vez de mostrar sempre a mesma mensagem.
+function describeError(error) {
+  if (error.name === "AbortError") {
+    const segundos = Math.round(REQUEST_TIMEOUT_MS / 1000);
+    return (
+      "A resposta passou de " +
+      segundos +
+      " segundos e a requisição foi cancelada. O modelo pode estar sobrecarregado."
+    );
+  }
+
+  if (error.name === "HttpError") {
+    if (error.status === 429) {
+      return "O limite de requisições da API do modelo foi atingido. Espere alguns instantes antes de tentar de novo.";
+    }
+    if (error.status >= 500) {
+      return (
+        "O backend respondeu com erro interno (HTTP " +
+        error.status +
+        "). Confira o terminal do servidor: a GROQ_API_KEY está configurada e o índice FAISS já foi gerado com python -m app.ingest?"
+      );
+    }
+    return "O backend recusou a requisição (HTTP " + error.status + ").";
+  }
+
+  return (
+    "Não consegui falar com o servidor do chatbot em " +
+    API_URL +
+    ". Confirme se o backend está rodando."
+  );
+}
+
 // Negrito (**texto**) e itálico (*texto* ou _texto_), que a LLM usa nas respostas
 const INLINE_MARKDOWN = /\*\*([^*\n]+)\*\*|(?<![\w*])\*([^*\s][^*\n]*)\*(?![\w*])|(?<!\w)_([^_\n]+)_(?!\w)/g;
 
@@ -40,26 +85,29 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  async function sendMessage(event) {
-    event.preventDefault();
-    const question = input.trim();
-    if (!question || loading) return;
+  async function askQuestion(question, previousMessages) {
+    // O histórico enviado ao backend ignora as bolhas de erro: elas são avisos
+    // da interface, não parte da conversa.
+    const history = previousMessages
+      .filter((message) => !message.isError)
+      .map(({ role, content }) => ({ role, content }));
 
-    const history = messages.map(({ role, content }) => ({ role, content }));
-    const userMessage = { role: "user", content: question };
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
+    setMessages([...previousMessages, { role: "user", content: question }]);
     setLoading(true);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
       const response = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question, history }),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
-        throw new Error(`O servidor respondeu com status ${response.status}`);
+        throw new HttpError(response.status);
       }
 
       const data = await response.json();
@@ -72,16 +120,27 @@ export default function ChatPage() {
         ...prev,
         {
           role: "assistant",
-          content:
-            "Não consegui falar com o servidor do chatbot. Confirme se o backend está rodando em " +
-            API_URL +
-            ".",
+          content: describeError(error),
           isError: true,
+          // Guardados para o botão "Tentar novamente" repetir a pergunta a
+          // partir do mesmo ponto da conversa.
+          retryQuestion: question,
+          retryBase: previousMessages,
         },
       ]);
     } finally {
+      clearTimeout(timeout);
       setLoading(false);
     }
+  }
+
+  function sendMessage(event) {
+    event.preventDefault();
+    const question = input.trim();
+    if (!question || loading) return;
+
+    setInput("");
+    askQuestion(question, messages);
   }
 
   return (
@@ -114,6 +173,17 @@ export default function ChatPage() {
                     </span>
                   ))}
                 </div>
+              )}
+
+              {message.isError && (
+                <button
+                  type="button"
+                  className="retry-button"
+                  onClick={() => askQuestion(message.retryQuestion, message.retryBase)}
+                  disabled={loading}
+                >
+                  Tentar novamente
+                </button>
               )}
             </div>
           </div>
