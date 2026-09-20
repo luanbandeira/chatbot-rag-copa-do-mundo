@@ -130,7 +130,12 @@ def retrieve_context_node(state: GraphState) -> GraphState:
     """Etapa 3: recuperação dos chunks mais relevantes da base vetorial."""
     docs = retrieve_chunks(state["rewritten_question"])
     state["retrieved_context"] = "\n\n---\n\n".join(doc.page_content for doc in docs)
-    state["sources"] = sorted({doc.metadata.get("source", "desconhecido") for doc in docs})
+    # O título ("Copa do mundo FIFA de 2022") é mais legível para quem usa o
+    # chat do que o slug do arquivo; o slug fica como reserva.
+    state["sources"] = sorted({
+        doc.metadata.get("title") or doc.metadata.get("source", "desconhecido")
+        for doc in docs
+    })
     return state
 
 
@@ -163,10 +168,13 @@ def call_llm_node(state: GraphState) -> GraphState:
 
 
 def format_response_node(state: GraphState) -> GraphState:
-    """Etapa 6: retorno da resposta — anexa as fontes usadas na resposta final."""
-    if state["sources"]:
-        fontes = ", ".join(state["sources"])
-        state["answer"] = f"{state['answer']}\n\n_Fontes: {fontes}_"
+    """Etapa 6: retorno da resposta.
+
+    As fontes seguem como campo próprio do estado (e da resposta da API) em
+    vez de serem concatenadas no texto. Assim o frontend pode exibi-las como
+    elementos separados e o histórico enviado à LLM não carrega esse rodapé.
+    """
+    state["answer"] = state["answer"].strip()
     return state
 
 

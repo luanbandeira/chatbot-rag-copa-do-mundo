@@ -30,6 +30,8 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     answer: str
+    # Artigos da base de conhecimento que embasaram a resposta
+    sources: List[str] = []
 
 
 @app.get("/health")
@@ -44,4 +46,7 @@ def chat(request: ChatRequest):
         "question": request.question,
         "history": request.history,
     })
-    return ChatResponse(answer=result["answer"])
+    return ChatResponse(
+        answer=result["answer"],
+        sources=result.get("sources", []),
+    )

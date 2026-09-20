@@ -63,7 +63,10 @@ export default function ChatPage() {
       }
 
       const data = await response.json();
-      setMessages((prev) => [...prev, { role: "assistant", content: data.answer }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: data.answer, sources: data.sources ?? [] },
+      ]);
     } catch (error) {
       setMessages((prev) => [
         ...prev,
@@ -101,6 +104,17 @@ export default function ChatPage() {
           <div key={index} className={`bubble-row ${message.role}`}>
             <div className={`bubble ${message.role} ${message.isError ? "error" : ""}`}>
               {message.role === "assistant" ? renderInlineMarkdown(message.content) : message.content}
+
+              {message.sources?.length > 0 && (
+                <div className="sources">
+                  <span className="sources-label">Fontes</span>
+                  {message.sources.map((source) => (
+                    <span className="source-chip" key={source}>
+                      {source}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ))}
