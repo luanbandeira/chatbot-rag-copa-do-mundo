@@ -142,4 +142,4 @@ Não é preciso instalar nada nem rodar a ingestão de novo. Basta:
 
 - Luan Bandeira de Melo Ramos
 - Alexis Freitas
-- Levi Arruda
+- Levi Vitor Vilela de Arruda
