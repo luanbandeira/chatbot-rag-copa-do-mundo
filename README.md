@@ -121,6 +121,19 @@ Não é preciso instalar nada nem rodar a ingestão de novo. Basta:
 - terminal 1: `cd backend`, ativar o ambiente virtual (passo 2) e `uvicorn app.main:app --port 8000`;
 - terminal 2: `cd frontend` e `npm run dev`.
 
+### Testes
+
+Os testes cobrem o filtro de relevância do retriever e os nós do grafo
+LangGraph. Eles rodam offline: a LLM e a busca vetorial são substituídas por
+dublês, então não é preciso chave da Groq nem ter gerado o índice FAISS.
+
+Com o ambiente virtual ativado, na pasta `backend`:
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
 ## Problemas comuns
 
 | Sintoma | Causa e solução |

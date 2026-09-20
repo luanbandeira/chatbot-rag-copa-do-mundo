@@ -12,19 +12,27 @@ O E5 exige os prefixos "query: " (perguntas) e "passage: " (trechos da base).
 Os vetores saem normalizados, então a distância L2 padrão do FAISS ordena
 os resultados do mesmo jeito que a similaridade de cosseno.
 """
-from typing import List
+from typing import TYPE_CHECKING, List
 
 from langchain_core.embeddings import Embeddings
-from sentence_transformers import SentenceTransformer
+
+if TYPE_CHECKING:  # só para anotação de tipo; não carrega nada em runtime
+    from sentence_transformers import SentenceTransformer
 
 MODEL_NAME = "intfloat/multilingual-e5-small"
 
 _model = None  # cache simples para não recarregar o modelo a cada chamada
 
 
-def _get_model() -> SentenceTransformer:
+def _get_model() -> "SentenceTransformer":
     global _model
     if _model is None:
+        # Import adiado: sentence-transformers carrega o torch junto, o que é
+        # lento e pesado. Só é necessário quando algum embedding vai de fato
+        # ser calculado — assim o módulo pode ser importado (por exemplo nos
+        # testes) sem esse custo.
+        from sentence_transformers import SentenceTransformer
+
         print(f"Carregando modelo de embeddings '{MODEL_NAME}' "
               f"(primeira vez baixa ~470MB, depois fica em cache local)...")
         _model = SentenceTransformer(MODEL_NAME)
