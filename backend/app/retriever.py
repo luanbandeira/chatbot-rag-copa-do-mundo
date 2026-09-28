@@ -2,8 +2,14 @@
 Carrega o índice FAISS salvo em disco (gerado por ingest.py) e expõe uma
 função de busca por similaridade, usada pelo nó de recuperação do grafo
 LangGraph.
+
+Parte 2 (Engenharia de Prompt): retrieve_chunks_with_scores() também
+devolve a distância L2 de cada chunk, usada pelo nó check_evidence do
+grafo para decidir se existe evidência suficiente ANTES de gastar uma
+chamada de LLM — evita consumo desnecessário de tokens quando a pergunta
+não tem nenhum chunk realmente relevante na base.
 """
-from typing import List
+from typing import List, Tuple
 
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
@@ -32,3 +38,13 @@ def retrieve_chunks(question: str, k: int = TOP_K) -> List[Document]:
     """Retorna os k chunks mais relevantes semanticamente para a pergunta."""
     vector_store = _get_vector_store()
     return vector_store.similarity_search(question, k=k)
+
+
+def retrieve_chunks_with_scores(question: str, k: int = TOP_K) -> List[Tuple[Document, float]]:
+    """Retorna os k chunks mais relevantes junto com a distância L2 de cada um.
+
+    Distância L2 menor = mais similar. Usado para decidir se há evidência
+    suficiente sem precisar chamar a LLM (ver app/graph.py, check_evidence_node).
+    """
+    vector_store = _get_vector_store()
+    return vector_store.similarity_search_with_score(question, k=k)
