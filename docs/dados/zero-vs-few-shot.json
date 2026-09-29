@@ -1,0 +1,151 @@
+{
+  "modelo": "openai/gpt-oss-20b",
+  "temperatura": 0.2,
+  "casos": [
+    {
+      "id": "factual-simples",
+      "pergunta": "Quem venceu a Copa do Mundo de 1970?",
+      "esperado": "Resposta curta citando o Brasil, sustentada pelo contexto.",
+      "deve_abster": false,
+      "melhor_distancia": 0.16296926140785217,
+      "fontes": [
+        "copa-do-mundo-fifa-de-1970"
+      ],
+      "zero_shot": {
+        "resposta": "O Brasil venceu a Copa do Mundo de 1970.",
+        "frases": 1,
+        "caracteres": 40,
+        "abstencao": false
+      },
+      "few_shot": {
+        "resposta": "O Brasil venceu a Copa do Mundo de 1970, derrotando a Itália por 4 a 1 na final disputada no México.",
+        "frases": 1,
+        "caracteres": 100,
+        "abstencao": false
+      }
+    },
+    {
+      "id": "factual-com-detalhe",
+      "pergunta": "Onde foi disputada a final da Copa do Mundo de 2014 e quem ganhou?",
+      "esperado": "Cita Alemanha campeã; local sustentado pelo contexto.",
+      "deve_abster": false,
+      "melhor_distancia": 0.19902187585830688,
+      "fontes": [
+        "copa-do-mundo-fifa-de-1966",
+        "copa-do-mundo-fifa-de-2014"
+      ],
+      "zero_shot": {
+        "resposta": "A final da Copa do Mundo de 2014 foi disputada no Estádio do Maracanã, no Rio de Janeiro. O jogo foi entre Alemanha e Argentina. A Alemanha sagrou‑se campeã.",
+        "frases": 3,
+        "caracteres": 157,
+        "abstencao": false
+      },
+      "few_shot": {
+        "resposta": "A final da Copa do Mundo de 2014 foi disputada no Estádio do Maracanã, no Rio de Janeiro. O jogo foi vencido pela seleção da Alemanha, que sagrou-se campeã mundial pela quarta vez.",
+        "frases": 2,
+        "caracteres": 180,
+        "abstencao": false
+      }
+    },
+    {
+      "id": "detalhe-ausente",
+      "pergunta": "Quantos espectadores assistiram à final da Copa do Mundo de 1950 no Maracanã, com número exato?",
+      "esperado": "Abstenção OU número explicitamente presente no contexto; não pode inventar.",
+      "deve_abster": null,
+      "melhor_distancia": 0.19171689450740814,
+      "fontes": [
+        "copa-do-mundo-fifa",
+        "copa-do-mundo-fifa-de-1950"
+      ],
+      "zero_shot": {
+        "resposta": "199.854 espectadores.",
+        "frases": 1,
+        "caracteres": 21,
+        "abstencao": false
+      },
+      "few_shot": {
+        "resposta": "A final da Copa do Mundo de 1950 no Maracanã contou com 199.854 espectadores, oficialmente registrados. Desses, 173.850 foram pagantes.",
+        "frases": 2,
+        "caracteres": 135,
+        "abstencao": false
+      }
+    },
+    {
+      "id": "fora-da-base",
+      "pergunta": "Qual foi o placar da final da Liga dos Campeões de 2019?",
+      "esperado": "Abstenção — assunto fora da base de Copa do Mundo.",
+      "deve_abster": true,
+      "melhor_distancia": 0.303292453289032,
+      "fontes": [
+        "copa-do-mundo-fifa",
+        "copa-do-mundo-fifa-de-1990",
+        "copa-do-mundo-fifa-de-2022",
+        "copa-do-mundo-fifa-de-2026",
+        "recordes-da-copa-do-mundo-fifa"
+      ],
+      "zero_shot": {
+        "resposta": "Não encontrei essa informação na base consultada.",
+        "frases": 1,
+        "caracteres": 49,
+        "abstencao": true
+      },
+      "few_shot": {
+        "resposta": "Não encontrei essa informação na base consultada.",
+        "frases": 1,
+        "caracteres": 49,
+        "abstencao": true
+      }
+    },
+    {
+      "id": "pede-resposta-longa",
+      "pergunta": "Faça um resumo completo e bem detalhado, com todos os detalhes possíveis, da história inteira das Copas do Mundo.",
+      "esperado": "Deve respeitar o limite de 3 frases do prompt mesmo com o pedido de detalhamento.",
+      "deve_abster": false,
+      "melhor_distancia": 0.298138290643692,
+      "fontes": [
+        "copa-do-mundo-fifa",
+        "copa-do-mundo-fifa-de-1930",
+        "copa-do-mundo-fifa-de-1958",
+        "copa-do-mundo-fifa-de-2022",
+        "recordes-da-copa-do-mundo-fifa"
+      ],
+      "zero_shot": {
+        "resposta": "Desculpe, mas a base consultada não contém informações suficientes para responder detalhadamente à sua pergunta.  \nOs dados disponíveis incluem apenas recordes de participações e algumas curiosidades específicas.",
+        "frases": 2,
+        "caracteres": 212,
+        "abstencao": false
+      },
+      "few_shot": {
+        "resposta": "Não encontrei essa informação na base consultada.",
+        "frases": 1,
+        "caracteres": 49,
+        "abstencao": true
+      }
+    },
+    {
+      "id": "conhecimento-proprio",
+      "pergunta": "Quantos títulos mundiais o Brasil tem e em que anos foram conquistados?",
+      "esperado": "Só pode afirmar o que estiver no contexto; não pode completar de memória.",
+      "deve_abster": null,
+      "melhor_distancia": 0.21735522150993347,
+      "fontes": [
+        "copa-do-mundo-fifa",
+        "copa-do-mundo-fifa-de-1970",
+        "copa-do-mundo-fifa-de-1994",
+        "recordes-da-copa-do-mundo-fifa"
+      ],
+      "zero_shot": {
+        "resposta": "O Brasil tem cinco títulos mundiais. Eles foram conquistados em 1958, 1962, 1970, 1994 e 2002.",
+        "frases": 2,
+        "caracteres": 94,
+        "abstencao": false
+      },
+      "few_shot": {
+        "resposta": "O Brasil possui cinco títulos mundiais, conquistados nos anos de 1958, 1962, 1970, 1994 e 2002.",
+        "frases": 1,
+        "caracteres": 95,
+        "abstencao": false
+      }
+    }
+  ]
+}
