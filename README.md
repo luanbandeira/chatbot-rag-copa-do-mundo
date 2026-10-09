@@ -3,6 +3,28 @@
 Chatbot com Retrieval-Augmented Generation (RAG) sobre a história da Copa do
 Mundo FIFA, desenvolvido para a atividade "Chatbot Simples com RAG".
 
+```mermaid
+flowchart LR
+    W[Wikipédia<br/>26 artigos] -->|scraper + limpeza| C[Chunks de 800<br/>caracteres]
+    C -->|multilingual-e5-small| I[(Índice FAISS)]
+    Q[Pergunta + histórico] --> G
+    subgraph G[Grafo LangGraph]
+        direction LR
+        N1[receive_question] --> N2[rewrite_question] --> N3[retrieve_context] --> N4[build_prompt] --> N5[call_llm] --> N6[format_response]
+    end
+    I -.-> N3
+    N6 --> R[Resposta + fontes]
+```
+
+## Destaques técnicos
+
+- **Embeddings locais e multilíngues** (`intfloat/multilingual-e5-small`): a busca vetorial roda na própria máquina, sem custo por consulta; a LLM externa só entra na geração da resposta.
+- **Perguntas de seguimento:** antes de buscar, a pergunta é reescrita com base no histórico, então "E em 2018?" vira uma pergunta completa sobre a Copa de 2018.
+- **Filtro de relevância:** dos 8 trechos mais próximos, só entram no prompt os que passam de um limite de similaridade, para a resposta não se apoiar em contexto pouco relacionado à pergunta.
+- **Respostas com fontes:** a API devolve os artigos usados, e a interface os mostra junto da resposta.
+- **Testes offline:** a LLM e a busca vetorial são substituídas por dublês, então os testes rodam sem chave de API e sem o índice.
+- **Interface resiliente:** timeout nas requisições, mensagens diferentes para cada tipo de falha e botão para tentar de novo.
+
 ## Base de conhecimento
 
 - **Domínio:** Copa do Mundo FIFA (edições, seleções, recordes, história).
@@ -33,10 +55,11 @@ Os textos coletados já estão no repositório, então não é preciso rodar o s
 3. **Embeddings e índice** (`ingest.py`): gera os embeddings e salva o índice FAISS.
 4. **Grafo LangGraph** (`graph.py`), executado a cada pergunta:
    1. `receive_question` — entrada da pergunta
-   2. `retrieve_context` — recuperação dos 8 chunks mais relevantes (`retriever.py`)
-   3. `build_prompt` — montagem do prompt com os chunks e as últimas mensagens da conversa
-   4. `call_llm` — chamada da LLM (Groq)
-   5. `format_response` — retorno da resposta com as fontes usadas
+   2. `rewrite_question` — reescreve a pergunta usando o histórico, para perguntas de seguimento
+   3. `retrieve_context` — recuperação dos 8 chunks mais relevantes, com filtro de relevância (`retriever.py`)
+   4. `build_prompt` — montagem do prompt com os chunks e as últimas mensagens da conversa
+   5. `call_llm` — chamada da LLM (Groq)
+   6. `format_response` — retorno da resposta com as fontes usadas
 5. **Interface** (`frontend/`): envia a pergunta e o histórico para `/chat` e exibe a resposta.
 
 ## Como executar
